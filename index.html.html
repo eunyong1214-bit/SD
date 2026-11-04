@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root { --accent: #285e52; --background: #f5f7f5; --text: #24312d; --border: #cbd5cf; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--background); color: var(--text); font-family: Arial, "Noto Sans KR", sans-serif; font-size: 20px; line-height: 1.65; }
+    main { width: min(100% - 32px, 820px); margin: 40px auto; }
+    h1 { margin: 0 0 12px; color: var(--accent); font-size: clamp(30px, 5vw, 44px); line-height: 1.3; }
+    h2 { margin: 0 0 12px; font-size: 23px; }
+    p { margin: 0 0 20px; }
+    .card { margin-top: 24px; padding: clamp(20px, 4vw, 36px); background: white; border: 1px solid var(--border); border-radius: 18px; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    .field { margin-bottom: 26px; }
+    input, textarea, button { width: 100%; font: inherit; }
+    input, textarea { padding: 14px; color: var(--text); background: white; border: 2px solid var(--border); border-radius: 10px; }
+    textarea { min-height: 160px; resize: vertical; }
+    input:focus, textarea:focus, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .hint { margin: 8px 0 0; font-size: 17px; }
+    button { min-height: 60px; padding: 14px 20px; border: 0; border-radius: 10px; color: white; background: var(--accent); font-weight: bold; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    #status { min-height: 36px; margin-top: 16px; font-weight: bold; overflow-wrap: anywhere; }
+    #examples ol { margin: 0; padding-left: 26px; }
+    #examples li { margin-bottom: 16px; overflow-wrap: anywhere; }
+    #examples li:last-child { margin-bottom: 0; }
+    [hidden] { display: none !important; }
+    @media (max-width: 480px) { main { margin: 24px auto; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>진로독서 기록장</h1>
+      <p>진로독서 5시간 동안, 매시간 읽은 뒤 기록해요.<br>마음에 남은 문장이나 읽으며 떠오른 질문을 적어 주세요.</p>
+    </header>
+    <section class="card" aria-label="책 기록 입력">
+      <form id="recordForm">
+        <div class="field">
+          <label for="number">학번</label>
+          <input id="number" name="number" type="text" inputmode="numeric" pattern="[0-9]{1,6}" maxlength="6" placeholder="예: 10101" aria-describedby="numberHint" required>
+          <p class="hint" id="numberHint">이름 대신 학번을 적어 주세요.</p>
+        </div>
+        <div class="field">
+          <label for="title">책 제목</label>
+          <input id="title" name="title" type="text" maxlength="150" placeholder="읽은 책 제목을 적어 주세요" required>
+        </div>
+        <div class="field">
+          <label for="reflection">한 줄 감상</label>
+          <textarea id="reflection" name="reflection" maxlength="1000" placeholder="인상적인 문장이나 떠오른 질문을 적어 주세요" aria-describedby="reflectionHint" required></textarea>
+          <p class="hint" id="reflectionHint">1,000자까지 적을 수 있어요. 연락처나 성적은 적지 않아요.</p>
+        </div>
+        <button id="submitButton" type="submit" disabled>제출</button>
+        <div id="status" role="status" aria-live="polite">시트를 연결하고 있어요.</div>
+      </form>
+      <noscript>이 화면을 쓰려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+    </section>
+    <section id="examples" class="card" hidden>
+      <h2>이렇게 적어 보세요</h2>
+      <p class="hint">아직 저장된 기록이 없어 예시를 보여 드려요. 아래 내용은 시트에 저장되지 않아요.</p>
+      <ol>
+        <li><strong>1번 · 데미안</strong><br>‘새는 알에서 나오려고 투쟁한다’는 문장이 마음에 남았다.</li>
+        <li><strong>2번 · 어린 왕자</strong><br>내가 소중하게 생각하는 것은 무엇일까?</li>
+        <li><strong>3번 · 진로를 정하지 못한 나에게</strong><br>좋아하는 일과 잘하는 일이 다르면 어떻게 선택할까?</li>
+      </ol>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('recordForm');
+    const button = document.getElementById('submitButton');
+    const status = document.getElementById('status');
+    const examples = document.getElementById('examples');
+    let busy = false;
+    function showMessage(message) { status.textContent = message; }
+    function setBusy(value) {
+      busy = value;
+      button.disabled = value;
+      button.textContent = value ? '저장하고 있어요…' : '제출';
+    }
+    function start() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showMessage('파일을 직접 열면 저장할 수 없어요. 배포한 웹 앱 주소로 열어 주세요.');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (!result || !result.ok) {
+            showMessage(result && result.message ? result.message : '화면을 준비하지 못했어요. 새로고침해 주세요.');
+            return;
+          }
+          examples.hidden = !result.empty;
+          button.disabled = false;
+          showMessage('읽은 내용을 적고 제출해 주세요.');
+        })
+        .withFailureHandler(function() {
+          showMessage('연결하지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요. 계속 안 되면 선생님께 알려 주세요.');
+        })
+        .getInitialState();
+    }
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      if (busy || button.disabled) return;
+      if (!form.reportValidity()) return;
+      const data = {
+        number: form.elements.number.value.trim(),
+        title: form.elements.title.value.trim(),
+        reflection: form.elements.reflection.value.trim()
+      };
+      if (!data.number || !data.title || !data.reflection) {
+        showMessage('학번, 책 제목, 한 줄 감상을 모두 적어 주세요.');
+        return;
+      }
+      setBusy(true);
+      showMessage('기록을 저장하고 있어요. 잠시 기다려 주세요.');
+      google.script.run
+        .withSuccessHandler(function(result) {
+          setBusy(false);
+          if (!result || !result.ok) {
+            showMessage(result && result.message ? result.message : '저장 여부를 확인하지 못했어요. 선생님께 알려 주세요.');
+            return;
+          }
+          showMessage('제출했어요');
+          examples.hidden = true;
+          // 학번과 제목은 다음 독서 시간에도 쓸 수 있게 남깁니다.
+          form.elements.reflection.value = '';
+        })
+        .withFailureHandler(function() {
+          setBusy(false);
+          showMessage('저장 결과를 확인하지 못했어요. 쓴 내용은 그대로 있어요. 다시 누르기 전에 선생님께 시트에 저장됐는지 확인해 달라고 해 주세요.');
+        })
+        .submitRecord(data);
+    });
+    start();
+  </script>
+</body>
+</html>
