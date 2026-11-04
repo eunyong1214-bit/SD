@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>진로독서 기록장</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f7f5; color: #24312d; font-family: Arial, sans-serif; font-size: 18px; line-height: 1.6; }
+    .notice { padding: 16px; text-align: center; }
+    a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 20px; color: #285e52; font-weight: bold; }
+    a:focus-visible { outline: 3px solid #285e52; outline-offset: 3px; }
+    iframe { display: block; width: 100%; height: calc(100vh - 90px); height: calc(100dvh - 90px); min-height: 700px; border: 0; background: #f5f7f5; }
+    #message { max-width: 720px; margin: 32px auto; padding: 24px; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="notice" id="notice" hidden>
+    화면이 안 보이면
+    <a id="directLink" target="_blank" rel="noopener">기록장 직접 열기</a>
+  </div>
+  <p id="message" role="status">기록장을 준비하고 있어요.</p>
+  <iframe id="recordFrame" title="진로독서 기록장 입력 화면" hidden></iframe>
+  <noscript>이 화면을 쓰려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+  <script>
+    // ★ 바꿀 곳: Apps Script에서 배포한 웹 앱 URL을 넣으세요.
+    // 끝이 /exec인 주소를 넣습니다. 따옴표는 남겨 주세요.
+    const WEB_APP_URL = '여기에_웹앱_URL을_붙여넣으세요';
+
+    const message = document.getElementById('message');
+    const notice = document.getElementById('notice');
+    const frame = document.getElementById('recordFrame');
+    const link = document.getElementById('directLink');
+
+    function openRecord() {
+      let url;
+      try {
+        url = new URL(WEB_APP_URL);
+        if (
+          url.protocol !== 'https:' ||
+          url.hostname !== 'script.google.com' ||
+          !/^\/macros\/s\/[^/]+\/exec$/.test(url.pathname)
+        ) {
+          throw new Error('주소 확인 필요');
+        }
+      } catch (error) {
+        message.textContent = '기록장 주소가 아직 연결되지 않았어요. 선생님께 웹 앱 주소를 확인해 달라고 해 주세요.';
+        return;
+      }
+      link.href = url.href;
+      notice.hidden = false;
+      frame.src = url.href;
+      frame.hidden = false;
+      message.hidden = true;
+    }
+    openRecord();
+  </script>
+</body>
+</html>
